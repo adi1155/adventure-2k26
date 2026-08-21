@@ -17,7 +17,7 @@ const URL = `http://127.0.0.1:${PORT}/?export=1`;
 const WIDTH = 1280;
 const HEIGHT = 720;
 const FPS = 20;
-const DURATION = 90;
+const DURATION = 110;
 const TOTAL = FPS * DURATION;
 
 function run(cmd, args, opts = {}) {

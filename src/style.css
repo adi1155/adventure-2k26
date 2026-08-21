@@ -36,7 +36,8 @@ body {
 #grain,
 #atmosphere,
 #hud,
-#loader {
+#loader,
+#pin-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -301,4 +302,128 @@ h1 span {
 .maplibregl-ctrl,
 .maplibregl-ctrl-attrib {
   display: none !important;
+}
+
+#pin-layer {
+  z-index: 6;
+  overflow: hidden;
+}
+
+.map-pin {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 28px;
+  height: 40px;
+  opacity: 0;
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
+}
+
+.map-pin.visible {
+  opacity: 1;
+}
+
+.map-pin .pin-glow {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  transform: translate(-50%, 0);
+  background: radial-gradient(circle, rgba(255, 196, 90, 0.7), transparent 70%);
+  filter: blur(2px);
+}
+
+.map-pin.active .pin-glow {
+  animation: pinpulse 1.2s ease-out infinite;
+}
+
+.map-pin .pin-body {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  width: 24px;
+  height: 24px;
+  transform: translateX(-50%) rotate(-45deg);
+  border-radius: 50% 50% 50% 0;
+  background: linear-gradient(135deg, #fff1d0 0%, #e8c47a 45%, #c4892c 100%);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+
+.map-pin .pin-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: #1a1208;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 246, 223, 0.85);
+}
+
+@keyframes pinpulse {
+  0% { transform: translate(-50%, 0) scale(0.7); opacity: 0.9; }
+  100% { transform: translate(-50%, 0) scale(2.4); opacity: 0; }
+}
+
+#photo-card {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: min(58vw, 760px);
+  opacity: 0;
+  transform: translate(-50%, -46%) scale(0.84);
+  z-index: 8;
+  pointer-events: none;
+}
+
+#photo-card.visible {
+  opacity: 1;
+}
+
+.photo-frame {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(232, 196, 122, 0.55);
+  border-radius: 10px;
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.55),
+    0 0 0 8px rgba(7, 10, 18, 0.35);
+  background: #0b0d14;
+}
+
+.photo-frame img {
+  display: block;
+  width: 100%;
+  height: min(46vh, 420px);
+  object-fit: cover;
+  filter: saturate(1.05) contrast(1.06);
+}
+
+.photo-meta {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 28px 24px 18px;
+  background: linear-gradient(180deg, transparent, rgba(5, 7, 13, 0.88));
+}
+
+.photo-kicker {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+
+.photo-title {
+  display: block;
+  font-family: "Cinzel", serif;
+  font-size: clamp(26px, 3.6vw, 48px);
+  letter-spacing: 0.12em;
 }

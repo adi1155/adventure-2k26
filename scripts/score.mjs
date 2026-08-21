@@ -7,7 +7,7 @@ const outDir = path.join(root, "output");
 fs.mkdirSync(outDir, { recursive: true });
 
 const sampleRate = 44100;
-const duration = 90;
+const duration = 110;
 const n = sampleRate * duration;
 const L = new Float32Array(n);
 const R = new Float32Array(n);
@@ -88,7 +88,7 @@ for (let i = 0; i < n; i++) {
   R[i] += mix * (1 + pan);
 }
 
-const hits = [11.4, 18.7, 32.5, 36.1, 43.3, 48.5, 52.7, 57.5, 64.3, 78.4, 81.8];
+const hits = [12.2, 15.3, 21.4, 33.8, 40.2, 47.4, 55.6, 62.6, 70.2, 79.8, 93.6, 99.8];
 for (const h of hits) addHit(h);
 
 function writeWav(file, chL, chR) {

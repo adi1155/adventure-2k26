@@ -13,6 +13,7 @@ import {
   sliceRoute,
   smoother,
 } from "./geo.js";
+import { STOPS, photoState, revealedStopIds } from "./photos.js";
 
 const params = new URLSearchParams(location.search);
 const EXPORT = params.has("export");
@@ -55,6 +56,10 @@ const hud = {
   road: document.getElementById("road-chip"),
   atmosphere: document.getElementById("atmosphere"),
   loader: document.getElementById("loader"),
+  pins: document.getElementById("pin-layer"),
+  photo: document.getElementById("photo-card"),
+  photoImg: document.getElementById("photo-img"),
+  photoTitle: document.querySelector(".photo-title"),
 };
 
 function show(el, on) {
@@ -79,6 +84,51 @@ function setRoad(name) {
   }
   hud.road.textContent = name;
   show(hud.road, true);
+}
+
+function setPhoto(shot) {
+  if (!shot || shot.photo <= 0.02) {
+    hud.photo.style.opacity = "0";
+    hud.photo.style.transform = "translate(-50%, -46%) scale(0.84)";
+    hud.photo.classList.remove("visible");
+    return;
+  }
+  if (hud.photoImg.dataset.id !== shot.stop.id) {
+    hud.photoImg.src = shot.stop.src;
+    hud.photoImg.dataset.id = shot.stop.id;
+    hud.photoTitle.textContent = shot.stop.name;
+  }
+  hud.photo.classList.add("visible");
+  hud.photo.style.opacity = String(shot.photo);
+  hud.photo.style.transform = `translate(-50%, -46%) scale(${0.86 + 0.14 * shot.photo})`;
+}
+
+function ensurePins() {
+  if (hud.pins.dataset.ready) return;
+  hud.pins.dataset.ready = "1";
+  for (const stop of STOPS) {
+    const el = document.createElement("div");
+    el.className = "map-pin";
+    el.id = `pin-${stop.id}`;
+    el.innerHTML = '<span class="pin-glow"></span><span class="pin-body"><span class="pin-dot"></span></span>';
+    hud.pins.appendChild(el);
+  }
+}
+
+function updatePins(map, route, t, activeId, hide) {
+  ensurePins();
+  const shown = new Set(hide ? [] : revealedStopIds(t));
+  for (const stop of STOPS) {
+    const el = document.getElementById(`pin-${stop.id}`);
+    const place = route.places[stop.id];
+    if (!el || !place) continue;
+    const on = shown.has(stop.id);
+    el.classList.toggle("visible", on);
+    el.classList.toggle("active", on && stop.id === activeId);
+    if (!on) continue;
+    const pt = map.project(place.coord);
+    el.style.transform = `translate(${pt.x}px, ${pt.y}px) translate(-50%, -100%)`;
+  }
 }
 
 function emptyLine() {
@@ -138,31 +188,32 @@ function story(route, t) {
   const km = (id) => p[id].km * 1000;
 
   const legs = [
-    [18.6, 32.4, 0, km("islamabad")],
-    [32.4, 36.0, km("islamabad"), km("islamabad")],
-    [36.0, 43.2, km("islamabad"), km("balakot")],
-    [43.2, 45.6, km("balakot"), km("balakot")],
-    [45.6, 48.4, km("balakot"), km("kiwai")],
-    [48.4, 50.0, km("kiwai"), km("kiwai")],
-    [50.0, 52.6, km("kiwai"), km("kaghan")],
-    [52.6, 54.2, km("kaghan"), km("kaghan")],
-    [54.2, 57.4, km("kaghan"), km("naran")],
-    [57.4, 59.2, km("naran"), km("naran")],
-    [59.2, 64.2, km("naran"), km("babusar")],
-    [64.2, 73.0, km("babusar"), km("babusar")],
-    [73.0, 79.2, km("babusar"), km("chilas")],
+    [21.2, 33.6, 0, km("islamabad")],
+    [33.6, 40.0, km("islamabad"), km("islamabad")],
+    [40.0, 47.2, km("islamabad"), km("balakot")],
+    [47.2, 52.6, km("balakot"), km("balakot")],
+    [52.6, 55.4, km("balakot"), km("kiwai")],
+    [55.4, 60.2, km("kiwai"), km("kiwai")],
+    [60.2, 62.4, km("kiwai"), km("kaghan")],
+    [62.4, 67.2, km("kaghan"), km("kaghan")],
+    [67.2, 70.0, km("kaghan"), km("naran")],
+    [70.0, 75.2, km("naran"), km("naran")],
+    [75.2, 79.6, km("naran"), km("babusar")],
+    [79.6, 88.4, km("babusar"), km("babusar")],
+    [88.4, 93.4, km("babusar"), km("chilas")],
+    [93.4, 99.8, km("chilas"), km("chilas")],
   ];
 
   let meters = 0;
   let traveling = false;
-  if (t < 18.6) {
+  if (t < 21.2) {
     meters = 0;
   } else {
     const leg = legs.find((seg) => t <= seg[1]) || legs.at(-1);
     const [t0, t1, a, b] = leg;
     const u = t < t0 ? 0 : smoother((t - t0) / Math.max(0.001, t1 - t0));
-    meters = t > 79.2 ? total : lerp(a, b, u);
-    traveling = a !== b && t >= 18.6 && t < 79.4;
+    meters = t > 99.8 ? total : lerp(a, b, u);
+    traveling = a !== b && t >= 21.2 && t < 93.5;
   }
 
   const mountain = clamp((p.balakot ? (meters - km("balakot")) / (total - km("balakot")) : 0), 0, 1);
@@ -173,16 +224,16 @@ function story(route, t) {
   let pitch;
   let camBearing;
   let vehicle = false;
-  let routeOn = t >= 18.2;
-  let finale = t >= 80.2;
-  let title = t >= 11.2 && t < 19.0;
-  let endCard = t >= 81.6;
+  let routeOn = t >= 20.8;
+  let title = t >= 11.0 && t < 15.4;
+  let endCard = t >= 101.2;
   let place = null;
   let peakPlace = false;
   let road = null;
-  let pinStart = t >= 10.8 && t < 20.5;
-  let pinEnd = t >= 78.2;
+  let pinStart = false;
+  let pinEnd = t >= 93.4;
   let orbit = 0;
+  const shot = photoState(t);
 
   if (t < 6.8) {
     const u = range(t, 0, 6.8);
@@ -190,20 +241,20 @@ function story(route, t) {
     zoom = lerp(4.05, 5.15, u);
     pitch = lerp(14, 24, u);
     camBearing = lerp(-18, -8, u);
-  } else if (t < 12.2) {
-    const u = range(t, 6.8, 12.2);
+  } else if (t < 12.4) {
+    const u = range(t, 6.8, 12.4);
     center = [lerp(71.8, 74.12, u), lerp(30.4, 31.4, u)];
     zoom = lerp(5.15, 7.55, u);
     pitch = lerp(24, 36, u);
     camBearing = lerp(-8, 14, u);
-  } else if (t < 18.6) {
-    const u = range(t, 12.2, 16.4);
-    center = [lerp(74.12, 74.3436, Math.min(1, u)), lerp(31.4, 31.5497, Math.min(1, u))];
-    zoom = lerp(7.55, 9.45, Math.min(1, u));
+  } else if (t < 21.2) {
+    const u = range(t, 12.4, 15.1);
+    center = p.lahore.coord;
+    zoom = lerp(7.55, 9.35, Math.min(1, u));
     pitch = lerp(36, 42, Math.min(1, u));
-    camBearing = lerp(14, 26, Math.min(1, u));
-  } else if (t < 80.4) {
-    vehicle = true;
+    camBearing = lerp(14, 22, Math.min(1, u));
+  } else if (t < 100.2) {
+    vehicle = !shot || shot.photo < 0.35;
     const look = lerp(1800, 700, clamp(mountain, 0, 1));
     const pos = pointAt(route, meters);
     const ahead = pointAt(route, Math.min(total, meters + look));
@@ -213,72 +264,47 @@ function story(route, t) {
     zoom = lerp(9.05, 9.8, 1 - traveling * 0.25);
     pitch = lerp(44, 50, north);
 
-    if (t >= 18.6 && t < 32.4) {
+    if (t >= 21.2 && t < 33.6) {
       road = "M-2 Motorway";
-      zoom = lerp(9.35, 9.05, range(t, 18.6, 27));
+      zoom = lerp(9.35, 9.05, range(t, 21.2, 30));
       pitch = 44;
     }
-    if (t >= 32.4 && t < 36.0) {
-      place = "Islamabad";
-      zoom = lerp(9.1, 9.85, range(t, 32.4, 34));
-      pitch = 43;
-    }
-    if (t >= 36.0 && t < 43.2) {
-      road = t < 41.2 ? "M-1 Motorway" : null;
+    if (t >= 40.0 && t < 47.2) {
+      road = t < 45.4 ? "M-1 Motorway" : null;
       zoom = 9.15;
-      pitch = lerp(45, 48, range(t, 36.0, 43));
+      pitch = lerp(45, 48, range(t, 40.0, 47));
     }
-    if (t >= 43.2 && t < 45.6) {
-      place = "Balakot";
-      zoom = 10.15;
-      pitch = 50;
-    }
-    if (t >= 48.4 && t < 50.0) {
-      place = "Kiwai";
-      zoom = 10.25;
-      pitch = 51;
-    }
-    if (t >= 52.6 && t < 54.2) {
-      place = "Kaghan";
-      zoom = 10.35;
-      pitch = 52;
-    }
-    if (t >= 57.4 && t < 59.2) {
-      place = "Naran";
-      zoom = 10.4;
-      pitch = 52;
-    }
-    if (t >= 64.2 && t < 73.0) {
-      place = "Babusar Top";
-      peakPlace = true;
-      vehicle = true;
-      const u = range(t, 64.2, 73.0);
-      orbit = lerp(0, 78, u);
+    if (t >= 79.6 && t < 88.4) {
+      const u = range(t, 79.6, 88.4);
+      orbit = lerp(0, 54, u);
       center = p.babusar.coord;
-      zoom = lerp(10.35, 10.7, Math.sin(u * Math.PI));
-      pitch = lerp(52, 58, Math.sin(u * Math.PI));
       camBearing = (travelBearing + orbit) % 360;
     }
-    if (t >= 73.0 && t < 79.2) {
-      zoom = lerp(10.5, 9.6, range(t, 73.0, 79.2));
-      pitch = lerp(56, 48, range(t, 73.0, 79.2));
-    }
-    if (t >= 78.2 && t < 81.2) {
-      place = "Chilas";
-      vehicle = t < 79.4;
-      zoom = lerp(9.7, 9.2, range(t, 78.2, 81));
+    if (t >= 88.4 && t < 93.4) {
+      zoom = lerp(10.3, 9.5, range(t, 88.4, 93.4));
+      pitch = lerp(54, 48, range(t, 88.4, 93.4));
     }
   } else {
-    const u = range(t, 80.4, 90);
-    const a = p.babusar.coord;
+    const u = range(t, 100.2, 110);
+    const a = p.chilas.coord;
     center = [lerp(a[0], 73.85, u), lerp(a[1], 34.9, u)];
-    zoom = lerp(9.2, 6.35, u);
+    zoom = lerp(9.1, 6.35, u);
     pitch = lerp(48, 36, u);
     camBearing = lerp(18, -14, u);
     meters = total;
     routeOn = true;
     pinEnd = true;
-    if (t >= 80.6 && t < 82.4) place = "Chilas";
+  }
+
+  if (shot) {
+    const stopPlace = p[shot.stop.id];
+    if (stopPlace) center = stopPlace.coord;
+    vehicle = shot.photo < 0.25;
+    place = shot.stop.name;
+    peakPlace = Boolean(shot.stop.peak);
+    road = null;
+    zoom = (zoom || 9.2) + shot.punch * 1.55;
+    pitch = Math.min(58, (pitch || 44) + shot.punch * 8);
   }
 
   camBearing = (camBearing + Math.sin(t * 0.28) * 2.4 + 360) % 360;
@@ -298,17 +324,23 @@ function story(route, t) {
     road,
     pinStart,
     pinEnd,
+    photo: shot,
     mountain: clamp(mountain, 0, 1),
-    travel: traveling ? 1 : t >= 18.6 && t < 80 ? 0.35 : 0,
-    peak: t >= 64 && t < 73.6 ? range(t, 64, 66.4) * (1 - range(t, 72, 73.8)) : 0,
+    travel: traveling ? 1 : t >= 21.2 && t < 100 ? 0.35 : 0,
+    peak: shot?.stop.id === "babusar" ? shot.photo : 0,
     finale: endCard ? 1 : 0,
     exag: lerp(1.05, 1.32, clamp((t - 42) / 22, 0, 1)),
-    fadeOut: range(t, 87.2, 90),
+    fadeOut: range(t, 107.2, 110),
   };
 }
 
+
 async function main() {
   const route = await fetch("/route.json").then((r) => r.json());
+  STOPS.forEach((stop) => {
+    const img = new Image();
+    img.src = stop.src;
+  });
   await Promise.race([
     document.fonts.ready,
     new Promise((resolve) => setTimeout(resolve, 1800)),
@@ -556,8 +588,10 @@ async function main() {
 
     show(hud.title, s.title);
     show(hud.end, s.endCard);
-    setPlace(s.endCard ? null : s.place, s.peakPlace);
+    setPlace(s.endCard || (s.photo && s.photo.photo > 0.15) ? null : s.place, s.peakPlace);
     setRoad(s.road);
+    setPhoto(s.endCard ? null : s.photo);
+    updatePins(map, route, t, s.photo?.stop.id || null, s.endCard);
     hud.atmosphere.classList.toggle("mountain", s.mountain > 0.15);
     hud.atmosphere.classList.toggle("peak", s.peak > 0.2);
     document.getElementById("vignette").style.opacity = String(0.85 + s.fadeOut * 0.15);
