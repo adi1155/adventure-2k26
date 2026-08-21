@@ -7,7 +7,7 @@ const outDir = path.join(root, "output");
 fs.mkdirSync(outDir, { recursive: true });
 
 const sampleRate = 44100;
-const duration = 110;
+const duration = 126;
 const n = sampleRate * duration;
 const L = new Float32Array(n);
 const R = new Float32Array(n);
@@ -59,10 +59,10 @@ function addHit(t0) {
 for (let i = 0; i < n; i++) {
   const t = i / sampleRate;
   const intro = env(t, 0.8, 2, 0.7, 8, 4);
-  const travel = env(t - 15, 1.2, 2, 0.85, 40, 6);
-  const north = env(t - 40, 2, 3, 0.9, 18, 5);
-  const peak = env(t - 60.5, 1.4, 1.5, 1, 6, 3.5);
-  const finale = env(t - 75.5, 1.2, 1.5, 0.9, 6, 3);
+  const travel = env(t - 15, 1.2, 2, 0.85, 52, 6);
+  const north = env(t - 48, 2, 3, 0.9, 22, 5);
+  const peak = env(t - 94, 1.4, 1.5, 1, 7, 3.5);
+  const finale = env(t - 110, 1.2, 1.5, 0.9, 8, 3);
 
   const drone =
     Math.sin(2 * Math.PI * 73.42 * t) * 0.06 * (0.5 + intro) +
@@ -88,7 +88,7 @@ for (let i = 0; i < n; i++) {
   R[i] += mix * (1 + pan);
 }
 
-const hits = [12.2, 15.3, 21.4, 33.8, 40.2, 47.4, 55.6, 62.6, 70.2, 79.8, 93.6, 99.8];
+const hits = [12.2, 15.3, 23.2, 35.6, 50.8, 61.7, 71.9, 82.7, 95.1, 109.3, 117.4];
 for (const h of hits) addHit(h);
 
 function writeWav(file, chL, chR) {

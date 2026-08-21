@@ -1,4 +1,4 @@
-export const DURATION = 110;
+export const DURATION = 126;
 
 export function clamp(v, a, b) {
   return Math.max(a, Math.min(b, v));
